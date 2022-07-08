@@ -2,8 +2,15 @@ name: Build FontGoggles Application
 
 on:
   push:
-    tags:
-      - "v*"
+    paths-ignore:
+      - docs/*
+      - docsSource/*
+      - Scripts/*
+      - AUTHORS.txt
+      - CHANGELOG.md
+      - CONTRIBUTORS.txt
+      - LICENSE.txt
+      - README.md
 
 jobs:
   build:
@@ -78,40 +85,11 @@ jobs:
                      | python App/Distribute/await_notarization.py "${{ secrets.NOTARIZE_DEVELOPER }}" "${{ secrets.NOTARIZE_PASSWORD }}"
         xcrun stapler staple App/dist/FontGoggles.dmg
 
-    - name: Upload Notarization Log
-      uses: actions/upload-artifact@v1
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v3
       if: always()
       with:
-        name: notarize_log.txt
-        path: notarize_log.txt
-
-    - name: Read CHANGELOG.md
-      id: changelog
-      env:
-        GITHUB_REF: ${{ github.ref }}
-      run: |
-        source venv/bin/activate
-        echo "::set-output name=body::$(python App/Distribute/extract_changes.py)"
-
-    - name: Create Release
-      id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ github.ref }}
-        release_name: Release ${{ github.ref }}
-        body: ${{ steps.changelog.outputs.body }}
-        draft: true
-        prerelease: false
-
-    - name: Upload Release Asset
-      id: upload-release-asset
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps
-        asset_path: App/dist/FontGoggles.dmg
-        asset_name: FontGoggles.dmg
-        asset_content_type: application/octet-stream
+        name: FontGoggles
+        path: |
+          notarize_log.txt
+          App/dist/FontGoggles.dmg
